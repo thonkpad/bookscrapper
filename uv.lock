@@ -89,6 +89,7 @@ dependencies = [
     { name = "fastapi-cli" },
     { name = "lxml" },
     { name = "motor" },
+    { name = "python-dotenv" },
     { name = "requests" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -109,6 +110,7 @@ requires-dist = [
     { name = "fastapi-cli", specifier = ">=0.0.16" },
     { name = "lxml", specifier = ">=6.0.2" },
     { name = "motor", specifier = ">=3.7.1" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.38.0" },
 ]

@@ -20,19 +20,17 @@ async def get_books(
 
 @app.get("/books/{book_id}")
 async def get_book_id(book_id: str):
-    url = f"https://books.toscrape.com/catalogue/{book_id}/index.html"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "lxml")
+    book = utils.parse_book_id_html(book_id)
 
-    title = soup.find("h1").text
+    title = book.find("h1").text
 
-    cover = urljoin("https://books.toscrape.com", soup.find("img")["src"])
+    cover = urljoin("https://books.toscrape.com", book.find("img")["src"])
 
-    ratings = utils.parse_ratings(soup)
+    ratings = utils.parse_ratings(book)
 
-    description = soup.find("meta", attrs={"name": "description"}).get("content")
+    description = book.find("meta", attrs={"name": "description"}).get("content")
 
-    table = soup.find("table")
+    table = book.find("table")
     information = {}
 
     for row in table.find_all("tr"):

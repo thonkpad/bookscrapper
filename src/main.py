@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import requests
+import utils
 
 app = FastAPI()
 
@@ -27,6 +28,8 @@ async def get_book_id(book_id: str):
 
     cover = urljoin("https://books.toscrape.com", soup.find("img")["src"])
 
+    ratings = utils.parse_ratings(soup)
+
     description = soup.find("meta", attrs={"name": "description"}).get("content")
 
     table = soup.find("table")
@@ -45,6 +48,7 @@ async def get_book_id(book_id: str):
     return {
         "title": title,
         "cover": cover,
+        "ratings": ratings,
         "description": description,
         "information": information,
     }

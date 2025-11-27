@@ -23,20 +23,16 @@ async def get_book_id(book_id: str):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "lxml")
 
-    title = soup.find(
-        "h1"
-    ).text  # pyright: ignore[reportAny, reportOptionalMemberAccess]
+    title = soup.find("h1").text
 
-    cover = urljoin(
-        "https://books.toscrape.com", soup.find("img")["src"]
-    )  # pyright: ignore[reportOptionalSubscript]
+    cover = urljoin("https://books.toscrape.com", soup.find("img")["src"])
 
     description = soup.find("meta", attrs={"name": "description"}).get("content")
 
     table = soup.find("table")
     information = {}
 
-    for row in table.find_all("tr"):  # pyright: ignore[reportOptionalMemberAccess]
+    for row in table.find_all("tr"):
         columns = row.find_all(["th", "td"])
         if len(columns) == 2:
             key = columns[0].text.strip()

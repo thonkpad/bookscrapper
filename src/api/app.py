@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from api.routes import books, changes
 
 
 app = FastAPI(title="Book Scrapper")

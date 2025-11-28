@@ -41,3 +41,15 @@ def get_book_links(url):
             full_url = get_full_url(href)
             links.append(full_url)
     return links
+
+
+def get_next_page_url(soup, current_url):
+    next_li = soup.select_one("li.next")
+
+    if next_li:
+        next_link = next_li.select_one("a")
+        if next_link:
+            href = next_link.get("href")
+            return urljoin(current_url, href)
+
+    return None

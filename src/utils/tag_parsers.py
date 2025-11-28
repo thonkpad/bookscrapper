@@ -1,6 +1,5 @@
-
-import requests
 from bs4 import BeautifulSoup
+from urls import get_full_html
 
 
 def parse_ratings(book: BeautifulSoup):
@@ -21,8 +20,7 @@ def parse_ratings(book: BeautifulSoup):
 
 def parse_book_id_html(book: BeautifulSoup):
     url = f"https://books.toscrape.com/catalogue/{book}/index.html"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "lxml")
+    soup = get_full_html(url)
 
     return soup
 
@@ -32,5 +30,3 @@ def parse_category(book: BeautifulSoup):
     category = breadcrumbs[-2].find("a").text
 
     return category
-
-

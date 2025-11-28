@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
-from utils.helpers import parse_book_id_html, parse_ratings
+
+from utils.helpers import parse_book_id_html, parse_category, parse_ratings
 
 
 def get_book_details(book_id: str) -> dict:
@@ -7,7 +8,7 @@ def get_book_details(book_id: str) -> dict:
 
     title = book.find("h1").text
     cover = urljoin("https://books.toscrape.com", book.find("img")["src"])
-    category = "todo"
+    category = parse_category(book)
     ratings = parse_ratings(book)
     description = book.find("meta", attrs={"name": "description"}).get("content")
 

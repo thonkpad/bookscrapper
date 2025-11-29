@@ -38,7 +38,7 @@ def get_book_links(url):
         title_link = link.select_one("h3 a")
         if title_link:
             href = title_link.get("href")
-            full_url = get_full_url(href)
+            full_url = urljoin(url, href)  # Use the actual page URL
             links.append(full_url)
     return links
 

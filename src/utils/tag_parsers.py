@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
-from urls import get_full_html
+
+from src.utils.urls import get_full_html
 
 
 def parse_ratings(book: BeautifulSoup):

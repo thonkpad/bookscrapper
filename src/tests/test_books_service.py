@@ -26,6 +26,12 @@ def mock_html():
     """Create a mock BeautifulSoup object matching the expected data"""
     html_str = f"""
     <html>
+        <ul class="breadcrumb">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Books</a></li>
+            <li><a href="#">{EXPECTED_DATA["category"]}</a></li>
+            <li class="active">{EXPECTED_DATA["title"]}</li>
+        </ul>
         <h1>{EXPECTED_DATA["title"]}</h1>
         <img src="/media/cache/90/f7/90f79652caecac36bc97bf7b769c8fc4.jpg" />
         <meta name="description" content="{EXPECTED_DATA["description"]}" />
@@ -47,13 +53,12 @@ def mock_html():
 @patch("utils.helpers.parse_book_id_html")
 def test_get_book_details(mock_parse_book_id_html, mock_parse_ratings, mock_html):
     """Test get_book_details returns correct structure and values"""
-    # Setup mocks
+    # Setup mocks - order matters! Last patch decorator is first parameter
     mock_parse_book_id_html.return_value = mock_html
     mock_parse_ratings.return_value = EXPECTED_DATA["ratings"]
 
     # Import and call the function
     from api.services.books_service import get_book_details
-    from utils import helpers
 
     result = get_book_details("meditations_33")
 
@@ -76,7 +81,6 @@ def test_get_book_details_structure(
     mock_parse_ratings.return_value = EXPECTED_DATA["ratings"]
 
     from api.services.books_service import get_book_details
-    from utils import helpers
 
     result = get_book_details("meditations_33")
 
@@ -101,7 +105,6 @@ def test_get_book_details_price_formatting(
     mock_parse_ratings.return_value = EXPECTED_DATA["ratings"]
 
     from api.services.books_service import get_book_details
-    from utils import helpers
 
     result = get_book_details("meditations_33")
 

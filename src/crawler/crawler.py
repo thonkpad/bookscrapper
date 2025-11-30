@@ -1,20 +1,18 @@
 import asyncio
+from datetime import datetime
 from typing import List, Optional
+from urllib.parse import urljoin
 
 import aiohttp
 from bs4 import BeautifulSoup
-from requests.compat import urljoin
 
+from src.database.db import init_db
 from src.utils.tag_parsers import parse_category, parse_ratings
-from src.utils.urls import (
-    base_url,
-    get_full_url,
-)
-
-# semaphore = asyncio.Semaphore(10)  # concurrent requests
+from src.utils.urls import base_url, get_full_url
 
 
-async def fetch_html(session: aiohttp.ClientSession, url: str):
+async def fetch_html(session: aiohttp.ClientSession, url: str, semaphore):
+    """Fetch HTML content from URL"""
     async with semaphore:
         try:
             async with session.get(
@@ -31,8 +29,9 @@ async def fetch_html(session: aiohttp.ClientSession, url: str):
     return None
 
 
-async def fetch_category_links(session: aiohttp.ClientSession) -> List[str]:
-    html = await fetch_html(session, base_url)
+async def fetch_category_links(session: aiohttp.ClientSession, semaphore) -> List[str]:
+    """Fetch all category links"""
+    html = await fetch_html(session, base_url, semaphore)
     if not html:
         return []
 
@@ -45,11 +44,14 @@ async def fetch_category_links(session: aiohttp.ClientSession) -> List[str]:
             full_url = urljoin(base_url, href)
             links.append(full_url)
 
-    return links[1:]  # exclude index category
+    return links[1:]
 
 
-async def fetch_book_links(session: aiohttp.ClientSession, url: str) -> List[str]:
-    html = await fetch_html(session, url)
+async def fetch_book_links(
+    session: aiohttp.ClientSession, url: str, semaphore
+) -> List[str]:
+    """Fetch all book links from a page"""
+    html = await fetch_html(session, url, semaphore)
     if not html:
         return []
 
@@ -67,9 +69,10 @@ async def fetch_book_links(session: aiohttp.ClientSession, url: str) -> List[str
 
 
 async def fetch_next_page_url(
-    session: aiohttp.ClientSession, current_url: str
+    session: aiohttp.ClientSession, current_url: str, semaphore
 ) -> Optional[str]:
-    html = await fetch_html(session, current_url)
+    """Fetch next page URL if it exists"""
+    html = await fetch_html(session, current_url, semaphore)
     if not html:
         return None
 
@@ -86,8 +89,9 @@ async def fetch_next_page_url(
 
 
 async def fetch_book_details(
-    session: aiohttp.ClientSession, url: str
+    session: aiohttp.ClientSession, url: str, semaphore
 ) -> Optional[dict]:
+    """Fetch and parse book details"""
     try:
         async with semaphore:
             async with session.get(
@@ -100,7 +104,6 @@ async def fetch_book_details(
                 content = await response.read()
                 book = BeautifulSoup(content, "lxml")
 
-            # Parse all book details
             title = book.find("h1").text
             cover = get_full_url(book.find("img")["src"])
             category = parse_category(book)
@@ -109,7 +112,6 @@ async def fetch_book_details(
                 "content"
             )
 
-            # Parse table information
             table = book.find("table")
             information = {}
 
@@ -139,56 +141,92 @@ async def fetch_book_details(
 
 
 async def scrape_page_books(
-    session: aiohttp.ClientSession, page_url: str
+    session: aiohttp.ClientSession, page_url: str, semaphore, save_to_db_func=None
 ) -> tuple[List[dict], Optional[str]]:
-    book_links = await fetch_book_links(session, page_url)
+    """Scrape all books from a page and optionally save to DB"""
+    book_links = await fetch_book_links(session, page_url, semaphore)
 
-    book_tasks = [fetch_book_details(session, link) for link in book_links]
+    book_tasks = [fetch_book_details(session, link, semaphore) for link in book_links]
     books = await asyncio.gather(*book_tasks)
 
     books = [book for book in books if book is not None]
 
-    next_url = await fetch_next_page_url(session, page_url)
+    # Save to database if function provided
+    if save_to_db_func and books:
+        result = save_to_db_func(books)
+        print(f"✓ Saved {result['inserted']} new, updated {result['updated']} books")
+
+    next_url = await fetch_next_page_url(session, page_url, semaphore)
 
     return books, next_url
 
 
 async def scrape_category(
-    session: aiohttp.ClientSession, category_url: str
+    session: aiohttp.ClientSession, category_url: str, semaphore, save_to_db_func=None
 ) -> List[dict]:
+    """Scrape all books from a category (handles pagination)"""
     all_books = []
     current_url = category_url
     page_num = 1
 
     while current_url is not None:
         print(f"Scraping category page {page_num}: {current_url}")
-        books, current_url = await scrape_page_books(session, current_url)
+        books, current_url = await scrape_page_books(
+            session, current_url, semaphore, save_to_db_func
+        )
         all_books.extend(books)
         page_num += 1
 
     return all_books
 
 
-async def scrape_website() -> List[dict]:
-    """Main logic of the crawler"""
-    global semaphore
-    semaphore = asyncio.Semaphore(10)
+async def scrape_website(save_to_db: bool = True) -> dict:
+    """
+    Main logic of the crawler
 
+    Args:
+        save_to_db: If True, saves books to MongoDB as they're scraped
+
+    Returns:
+        Dictionary with scraping statistics
+    """
+    semaphore = asyncio.Semaphore(10)
     all_books = []
 
+    save_func = None
+    if save_to_db:
+        from src.database.db import save_books_batch
+
+        init_db()
+        save_func = save_books_batch
+
+    start_time = datetime.now()
+
     async with aiohttp.ClientSession() as session:
-        categories = await fetch_category_links(session)
+        categories = await fetch_category_links(session, semaphore)
         print(f"Found {len(categories)} categories")
 
-        category_tasks = [scrape_category(session, category) for category in categories]
+        category_tasks = [
+            scrape_category(session, category, semaphore, save_func)
+            for category in categories
+        ]
         results = await asyncio.gather(*category_tasks)
 
         for category_books in results:
             all_books.extend(category_books)
 
-    return all_books
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+
+    return {
+        "status": "success",
+        "total_books": len(all_books),
+        "duration_seconds": duration,
+        "scraped_at": end_time.isoformat(),
+        "saved_to_db": save_to_db,
+    }
 
 
-def run_scraper():
+def run_scraper(save_to_db: bool = True) -> dict:
     """Entry point of the website crawling algorithm"""
-    return asyncio.run(scrape_website())
+    return asyncio.run(scrape_website(save_to_db))

@@ -17,6 +17,8 @@ To setup a virtual environment with all the project and developer dependencies i
 
 To launch the local server run: `uv run uvicorn src.api.app:app --reload` at the root of the project directory.
 
+Run the task scheduler with `uv run celery -A src.scheduler.scheduler worker --beat --loglevel=info`
+
 Optionally, you can run `source .venv/bin/activate` to enter a shell with CLI program dependencies active.
 
 Run tests with `uv run pytest`

@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
+from src.api.rate_limit import limiter
 from src.api.routes import books, changes
 from src.database.db import lifespan
 
@@ -9,6 +12,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Include rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Include routers
 app.include_router(books.router, prefix="/books", tags=["Books"])
@@ -25,5 +32,6 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
+@limiter.limit("100/hour")
+async def health_check(request: Request):
     return {"status": "healthy"}

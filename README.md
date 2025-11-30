@@ -15,7 +15,7 @@ uv sync
 
 To setup a virtual environment with all the project and developer dependencies installed.
 
-To launch the local server run: `uv run fastapi dev src/main.py` at the root of the project directory.
+To launch the local server run: `uv run uvicorn src.api.app:app --reload` at the root of the project directory.
 
 Additionally, you can run `source .venv/bin/activate` to enter a shell with CLI program dependencies active.
 

@@ -21,8 +21,8 @@ app.conf.update(
 
 app.conf.beat_schedule = {
     "scrape-books-daily-12pm": {
-        "task": "src.celery_app.scrape_books_task",
-        "schedule": crontab(hour=12, minute=0),  # Run at 12:00 PM every day
+        "task": "src.scheduler.scheduler.scrape_books_task",
+        "schedule": crontab(hour=12, minute=30),  # Run at 12:30 PM every day
     },
 }
 

@@ -48,4 +48,6 @@ To setup a virtual environment with all the project and developer dependencies i
 * Generate API keys with `uv run python -c "import secrets; print('API_KEY_1:', secrets.token_urlsafe(32)); print('API_KEY_2:', secrets.token_urlsafe(32))"`
 and save them to your .env file
 
+* Redis/Valkey must be installed for the scheduler to function.
+
 * The app expects a `MONGO_URL` and `REDIS_URL` environment variable for the database and schedulers respectively.

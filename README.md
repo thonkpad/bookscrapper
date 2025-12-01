@@ -1,5 +1,27 @@
 # Bookscrapper
 
+## The scraper algorithm
+
+The scraping algorithm works in a breadth-first search manner. 
+Steps:
+  1. Fetches the urls to the categories on the list in the [home page](https://books.toscrape.com/index.html).
+  2. Gets the urls of all the books in the current page.
+      * Fetches book data for each retrieved url.
+  3. If all current pages have been scrapped, search for succeedng pages in each category.
+  4. Repeat steps 2-3 until no more next pages have been found.
+  
+On the server side, once the scraper is finished it writes all retrieved data to a MongoDB database.
+
+Lastly, the scraper is set to automatically run everyday at 12:30 Asia/Manila. But it can be manually triggered any time
+via the `POST /books/scrape` route.
+
+## API docs
+
+Documentations for each API endpoint can be accessed on the `/docs` route provided by Swagger.
+
+The `/books` and `/changes` endpoints are rate-limited to 100 requests per hour and require an API-key for authentication. To generate API-keys see setup
+instructions below
+
 ## Setup
 
 This codebase uses Python 3.14.0. Library dependencies, as well as developer dependencies, can be found in `pyproject.toml`
@@ -15,10 +37,15 @@ uv sync
 
 To setup a virtual environment with all the project and developer dependencies installed.
 
-To launch the local server run: `uv run uvicorn src.api.app:app --reload` at the root of the project directory.
+* To launch the local server run: `uv run uvicorn src.api.app:app --reload` at the root of the project directory.
 
-Run the task scheduler with `uv run celery -A src.scheduler.scheduler worker --beat --loglevel=info`
+* Run the task scheduler with `uv run celery -A src.scheduler.scheduler worker --beat --loglevel=info`
 
-Optionally, you can run `source .venv/bin/activate` to enter a shell with CLI program dependencies active.
+* Optionally, you can run `source .venv/bin/activate` to enter a shell with CLI program dependencies active.
 
-Run tests with `uv run pytest`
+* Run tests with `uv run pytest`
+
+* Generate API keys with `uv run python -c "import secrets; print('API_KEY_1:', secrets.token_urlsafe(32)); print('API_KEY_2:', secrets.token_urlsafe(32))"`
+and save them to your .env file
+
+* The app expects a `MONGO_URL` and `REDIS_URL` environment variable for the database and schedulers respectively.
